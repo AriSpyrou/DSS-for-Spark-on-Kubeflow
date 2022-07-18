@@ -1,0 +1,40 @@
+# Sample Pod showcasing a kubectl container which is capable of applying a k8s resource
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bitnami-kubectl
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values: 
+            - aspyrou-1
+  containers:
+  - name: kubectl
+    image: bitnami/kubectl:1.21.14-debian-11-r1
+    command:
+      - bash
+      - -exc
+      - |
+        kubectl apply -f /var/local/app/my-spark-pypi.yaml
+    volumeMounts:
+    - mountPath: /var/local/app
+      name: test-dir
+    - mountPath: /var/local/app/my-spark-pypi.yaml
+      name: test-file
+    ports:
+    - containerPort: 80
+  volumes:
+  - name: test-dir
+    hostPath:
+      path: /home/ubuntu/app/
+      type: Directory
+  - name: test-file
+    hostPath:
+      path: /home/ubuntu/app/spark-py-pi.yaml
+      type: File
+  restartPolicy: OnFailure

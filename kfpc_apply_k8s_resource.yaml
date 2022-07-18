@@ -1,0 +1,29 @@
+name: Apply Resource
+description: Applies a Kubernetes resource using a manifest file. Equivalent to kubectl apply -f manifest.yaml
+inputs:
+- {name: manifest_path, type: String, description: 'Input manifest to be applied'}
+outputs:
+- {name: output, type: String, description: 'Output of application for debugging purposes'}
+implementation:
+  hostAliases:
+  - ip: "10.0.1.41"
+    hostnames:
+    - "aspyrou-1"
+  container:
+    image: bitnami/kubectl:1.21.12-debian-10-r32
+    command:
+      - bash
+      - -exc
+      - |
+        manifest_path=$0
+        output=$1
+        echo '10.0.1.32 aspyrou-5' >> /etc/hosts
+        echo '10.0.1.5 aspyrou-4' >> /etc/hosts
+        echo '10.0.1.11 aspyrou-3' >> /etc/hosts
+        echo '10.0.1.42 aspyrou-2' >> /etc/hosts
+        echo '10.0.1.41 aspyrou-1' >> /etc/hosts
+        mkdir -p "$(dirname "$output")"
+        curl -L "http://aspyrou-1:50070/webhdfs/v1/$manifest_path?op=OPEN" | tee $output
+        kubectl apply -f $output -o json | jq '.metadata.name, .metadata.namespace, .kind' --raw-output | tee $output
+      - {inputValue: manifest_path}
+      - {outputPath: output}
