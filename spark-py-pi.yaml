@@ -29,6 +29,8 @@ spec:
   imagePullPolicy: Always
   mainApplicationFile: local:///opt/spark/examples/src/main/python/pi.py
   sparkVersion: "3.1.1"
+  hadoopConf:
+    fs.default.name: "hdfs://aspyrou-1:9000"
   restartPolicy:
     type: OnFailure
     onFailureRetries: 3
