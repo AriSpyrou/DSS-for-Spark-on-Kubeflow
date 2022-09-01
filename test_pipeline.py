@@ -1,56 +1,17 @@
 import kfp
 from kfp.components import func_to_container_op, InputPath, OutputPath
+import kfp.compiler as compiler
 import json
 from kfp import dsl
-_CONTAINER_MANIFEST = """
-{
-  "apiVersion": "sparkoperator.k8s.io/v1beta2",
-  "kind": "SparkApplication",
-  "metadata": {
-    "generateName": "pyspark-pi-",
-    "namespace": "spark-operator"
-  },
-  "spec": {
-    "type": "Python",
-    "pythonVersion": "3",
-    "mode": "cluster",
-    "image": "gcr.io/spark-operator/spark-py:v3.1.1",
-    "imagePullPolicy": "Always",
-    "mainApplicationFile": "local:///opt/spark/examples/src/main/python/pi.py",
-    "sparkVersion": "3.1.1",
-    "restartPolicy": {
-      "type": "OnFailure",
-      "onFailureRetries": 3,
-      "onFailureRetryInterval": 10,
-      "onSubmissionFailureRetries": 5,
-      "onSubmissionFailureRetryInterval": 20
-    },
-    "driver": {
-      "cores": 1,
-      "coreLimit": "1200m",
-      "memory": "512m",
-      "labels": {
-        "version": "3.1.1"
-      },
-      "serviceAccount": "spark-spark"
-    },
-    "executor": {
-      "cores": 1,
-      "instances": 1,
-      "memory": "512m",
-      "labels": {
-        "version": "3.1.1"
-      }
-    }
-  }
-}
-"""
 
 @func_to_container_op
 def print_op(message: str):
     print(message)
 
 def resourceop_basic():
+    with open('spark-py-pi.json') as f:
+      _CONTAINER_MANIFEST = f.read()
+    
     op = kfp.dsl.ResourceOp(
       name='Start Spark on K8s',
       k8s_resource=json.loads(_CONTAINER_MANIFEST),
@@ -58,16 +19,24 @@ def resourceop_basic():
       attribute_outputs={"name": "{.metadata.name}"})
     return op.outputs
 
+def get_logs(pod_name: str):
+  op = kfp.dsl.ResourceOp(
+    name='Retrieve Logs from Spark Driver',
+    k8s_resource=f'{pod_name} -n spark-operator',
+    action='logs'
+  )
+# TODO Find how to get logs from a pod. Maybe use the API to get them directly. Alt: Try with get(???) Final: Write logs in file in hdfs
 @dsl.pipeline(name='my-pipeline')
 def my_pipeline():
     create_resource_task = resourceop_basic()
-    print_op(create_resource_task['name'])
+    get_logs(create_resource_task['name'])
+    #print_op(create_resource_task['name'])
 
 # This is a hacky solution
 authservice_session_cookie="""\
-authservice_session=MTY1ODE1MDczM3xOd3dBTkZaVVNsVkZSVWRSVlRK\
-VVQwZFVWMVZUU3pSTVVqSlNXRmhTVURNM1MwWklVRkZEVkRkUU5VZGFRMDR5\
-TWxSRlNWY3pVVkU9fGTWhvfUsgy_y2keLVzT_ysFhTyQEAndDCjE94RFGU7l\
+authservice_session=MTY2MTk2MjIyOXxOd3dBTkVKYVdFNU9XVlZT\
+V2pKRldVcE9TVWxCTWxoT1UwWklSazFYVVVWSlYwMDJURlJGVmxFMVNs\
+RlpOVnBNVEVzelNWWkdUVUU9fMZOn3odJnp_-VWKNCUCIXQ7f-xIijvyAeJJYEMtPjLa\
 """
 client = kfp.Client(host="http://10.64.140.43.nip.io/pipeline", 
                     cookies=authservice_session_cookie)
@@ -76,3 +45,6 @@ client.create_run_from_pipeline_func(
     arguments={},
     experiment_name='Test-Exp',
     namespace='admin')
+
+# Alternative
+# compiler.Compiler().compile(my_pipeline, "paparia.yaml")

@@ -1,2 +1,3 @@
 bundle-kubeflow/
 kube-hdfs/
+*.pyc
