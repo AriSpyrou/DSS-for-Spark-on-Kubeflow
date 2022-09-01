@@ -1,3 +1,5 @@
 bundle-kubeflow/
 kube-hdfs/
 *.pyc
+data/
+old_examples/
