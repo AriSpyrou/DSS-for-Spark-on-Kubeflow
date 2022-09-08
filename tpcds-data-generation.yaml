@@ -38,18 +38,6 @@ spec:
     "spark.kubernetes.memoryOverheadFactor": "0.3"
     "spark.sql.files.maxRecordsPerFile": "30000000"
     "spark.serializer": "org.apache.spark.serializer.KryoSerializer"
-    # "spark.kubernetes.node.selector.eks.amazonaws.com/capacityType": "ON_DEMAND"
-    # "spark.kubernetes.node.selector.topology.kubernetes.io/zone": "us-west-2b"
-
-    # S3 settings
-    # "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
-    # "spark.hadoop.fs.s3a.fast.upload": "true"
-    # "spark.hadoop.fs.s3a.path.style.access": "true"
-    # "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
-    # "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2"
-    # "spark.kubernetes.executor.podNamePrefix": "oss-data-gen"
-    # "spark.executor.defaultJavaOptions": "-verbose:gc -XX:+UseG1GC"
-    # "spark.driver.defaultJavaOptions": "-XX:+UseG1GC"
   driver:
     cores: 1
     coreLimit: "3000m"
@@ -69,7 +57,5 @@ spec:
   volumes:    
     - name: "spark-local-dir-1"
       emptyDir: {}
-      # hostPath:
-      #   path: "/tmp/spark-local-dir"
   restartPolicy:  
     type: Never
