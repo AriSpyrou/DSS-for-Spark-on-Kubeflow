@@ -3,3 +3,4 @@ kube-hdfs/
 *.pyc
 data/
 old_examples/
+*/.vscode/
