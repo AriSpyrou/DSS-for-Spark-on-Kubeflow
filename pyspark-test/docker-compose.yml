@@ -1,0 +1,8 @@
+version: '2'
+services:
+  spark:
+    image: jupyter/pyspark-notebook:latest
+    ports:
+      - 8888:8888
+    volumes:
+      - F:\Stuff\Thesis\app\pyspark-test\data:/home/jovyan/work
