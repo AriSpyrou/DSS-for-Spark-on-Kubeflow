@@ -1,3 +1,4 @@
+from turtle import onclick
 import pandas as pd
 import numpy as np
 from sklearn import tree
@@ -16,6 +17,7 @@ dtype = {
     'Cost-q82-v2.4': np.float64,
     'Cost-Avg': np.float64
 }
+
 # Read original CSV
 df = pd.read_csv("F:\\Stuff\\Thesis\\Results.csv", delimiter=';', decimal=',', dtype=dtype)
 # One hot representation for types of queries
@@ -30,6 +32,7 @@ df2['cost'] = df2['time'] * (df2['INST'] * df2['CORE'] * vCPUsec + df2['RAM'] * 
 # Copy dataframe in order to iteratively change column values later
 fdf = df2.copy()
 
+st.write('Configuration')
 # Pick query or Avg
 query = st.selectbox('Load Type', ['Balanced', 'Network Shuffle Heavy', 'CPU Heavy', 'I/O Heavy'])
 if query == 'Balanced':
@@ -41,30 +44,67 @@ elif query == 'CPU Heavy':
 else:
     query = 'q82-v2.4'
 
-# Apply scale to dataset
-def change_scale():
-    fdf['cost'] = df2['cost']*scale/10
-    fdf['time'] = df2['time']*scale/10
-
 # Scale = 10 for default dataset otherwise change to 100, 1000 and so on to get linear approximation
-scale = st.select_slider('Dataset Size', options=[10, 100, 1000, 10000], format_func=str, on_change=change_scale)
+scale = st.select_slider('Dataset Size', options=[10, 100, 1000, 10000], format_func=str)
 
-def infer():
-    # Split to X and y
-    X = fdf.loc[fdf[f'Time-{query}'] == 1]
-    y = fdf.loc[fdf[f'Time-{query}'] == 1][fdf.columns[:3]]
 
-    # Declare three decision trees
-    regr = tree.DecisionTreeRegressor()
-    regr2 = tree.DecisionTreeRegressor()
-    regr3 = tree.DecisionTreeRegressor()
+# time_to_settings = None
+# money_to_settings = None
+# settings_to_time = None
 
-    # Fit the trees to the data
-    time_to_settings = regr.fit(X['time'].array.reshape(-1,1), y)
-    money_to_settings = regr2.fit(X['cost'].array.reshape(-1,1), y)
-    settings_to_time = regr3.fit(y, X['time'].array.reshape(-1,1))
+#def train():
+    #global time_to_settings, money_to_settings, settings_to_time
 
+fdf['cost'] = df2['cost']*scale/10
+fdf['time'] = df2['time']*scale/10
+
+# Split to X and y
+X = fdf.loc[fdf[f'Time-{query}'] == 1]
+y = fdf.loc[fdf[f'Time-{query}'] == 1][fdf.columns[:3]]
+
+# Declare three decision trees
+regr = tree.DecisionTreeRegressor()
+regr2 = tree.DecisionTreeRegressor()
+regr3 = tree.DecisionTreeRegressor()
+
+# Fit the trees to the data
+time_to_settings = regr.fit(X['time'].array.reshape(-1,1), y)
+money_to_settings = regr2.fit(X['cost'].array.reshape(-1,1), y)
+settings_to_time = regr3.fit(y, X['time'].array.reshape(-1,1))
+print(time_to_settings)
     # Inference
-    x = [0.004594]
-    pred = money_to_settings.predict([x]) 
-    print(pred)
+    # x = [0.004594]
+    # pred = money_to_settings.predict([x]) 
+    # print(pred)
+
+#st.button('Apply Configuration', on_click=train)
+########################################################
+def find_config():
+    global rinput, x
+    if rinput == 'Runtime (seconds)':
+        i, c, r = time_to_settings.predict([[x]])[0]
+    else:
+        i, c, r = money_to_settings.predict([[x]])[0]
+    return(f'Instances: {i}\nCores: {c}\n RAM: {r}')
+
+st.write('Find Configuration')
+
+rinput = st.radio('Input', ['Runtime (seconds)', 'Cost'])
+
+x = st.number_input('Constraint Value')
+st.write('Valid Configuration')
+st.write(find_config())
+########################################################
+def find_time_cost():
+    global w, cor, ra
+    time = settings_to_time.predict([[w, cor, ra]])[0]
+    return(f'Approximated Time: {time:.2f}s, Calculated Cost: {time*(w*cor*vCPUsec+ra*GBsec)}')
+st.write('')
+st.write('Calculate Time & Cost from Configuration')
+
+w = st.select_slider('Workers', [1, 2, 3, 4])
+cor = st.select_slider('Cores (per worker)', [1, 2, 3])
+ra = st.select_slider('RAM (per worker)', [1, 2, 3])
+
+st.button('Calculate', on_click=find_time_cost)
+st.write(find_time_cost())
