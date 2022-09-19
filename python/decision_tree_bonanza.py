@@ -47,14 +47,6 @@ else:
 # Scale = 10 for default dataset otherwise change to 100, 1000 and so on to get linear approximation
 scale = st.select_slider('Dataset Size', options=[10, 100, 1000, 10000], format_func=str)
 
-
-# time_to_settings = None
-# money_to_settings = None
-# settings_to_time = None
-
-#def train():
-    #global time_to_settings, money_to_settings, settings_to_time
-
 fdf['cost'] = df2['cost']*scale/10
 fdf['time'] = df2['time']*scale/10
 
@@ -71,13 +63,7 @@ regr3 = tree.DecisionTreeRegressor()
 time_to_settings = regr.fit(X['time'].array.reshape(-1,1), y)
 money_to_settings = regr2.fit(X['cost'].array.reshape(-1,1), y)
 settings_to_time = regr3.fit(y, X['time'].array.reshape(-1,1))
-print(time_to_settings)
-    # Inference
-    # x = [0.004594]
-    # pred = money_to_settings.predict([x]) 
-    # print(pred)
 
-#st.button('Apply Configuration', on_click=train)
 ########################################################
 def find_config():
     global rinput, x
@@ -85,7 +71,7 @@ def find_config():
         i, c, r = time_to_settings.predict([[x]])[0]
     else:
         i, c, r = money_to_settings.predict([[x]])[0]
-    return(f'Instances: {i}\nCores: {c}\n RAM: {r}')
+    return(f'Instances: {int(i)} Cores: {int(c)} RAM: {int(r)}')
 
 st.write('Find Configuration')
 
